@@ -36,7 +36,7 @@ class DBV_Exception extends Exception
 class DBV
 {
 
-    protected $_action = "index";
+    protected $_action = 'index';
     protected $_adapter;
     protected $_log = array();
 
@@ -88,7 +88,7 @@ class DBV
 
     public function dispatch()
     {
-        $action = $this->_getAction() . "Action";
+        $action = $this->_getAction() . 'Action';
         $this->$action();
     }
 
@@ -100,7 +100,7 @@ class DBV
             $this->revision = $this->_getCurrentRevision();
         }
 
-        $this->_view("index");
+        $this->_view('index');
     }
 
     public function schemaAction()
@@ -136,7 +136,7 @@ class DBV
 
     public function revisionsAction()
     {
-        $revisions = isset($_POST['revisions']) ? array_map("intval", $_POST['revisions']) : array();
+        $revisions = isset($_POST['revisions']) ? array_map('intval', $_POST['revisions']) : array();
         $current_revision = $this->_getCurrentRevision();
 
         if (count($revisions)) {
@@ -157,7 +157,9 @@ class DBV
                 if ($revision > $current_revision) {
                     $this->_setCurrentRevision($revision);
                 }
-                $this->confirm(__("Executed revision #{revision}", array('revision' => "<strong>$revision</strong>")));
+                $this->confirm(__('Executed revision #<strong>#{revision}</strong>', array(
+                    'revision' => $revision
+                )));
             }
         }
 
@@ -184,7 +186,9 @@ class DBV
             $file = $_POST['file'];
         } else {
             $this->_json(array(
-                'error' => __("Filename #{file} contains illegal characters. Please contact the developer.", array('file' => $_POST['file']))
+                'error' => __('Filename #{file} contains illegal characters. Please contact the developer.', array(
+                    'file' => $_POST['file']
+                ))
             ));
         }
 
@@ -197,24 +201,30 @@ class DBV
 
         if (!@file_put_contents($path, $content)) {
             $this->_json(array(
-                'error' => __("Couldn't write file: #{path}<br />Make sure the user running DBV has adequate permissions.", array('path' => "<strong>$path</strong>"))
+                'error' => __("Couldn't write file: #<strong>{path}</strong><br />Make sure the user running DBV has adequate permissions.", array(
+                    'path' => $path
+                ))
             ));
         }
 
-        $this->_json(array('ok' => true, 'message' => __("File #{path} successfully saved!", array('path' => "<strong>$path</strong>"))));
+        $this->_json(array('ok' => true, 'message' => __('File #<strong>#{path}</strong> successfully saved!', array(
+            'path' => $path
+        ))));
     }
 
     protected function _createSchemaObject($item)
     {
-        $file = DBV_SCHEMA_PATH . DS . "$item.sql";
+        $file = DBV_SCHEMA_PATH . DS . $item . '.sql';
 
         if (file_exists($file)) {
             if ($this->_runFile($file)) {
-                $this->confirm(__("Created schema object #{item}", array('item' => "<strong>$item</strong>")));
+                $this->confirm(__('Created schema object <strong>#{item}</strong>', array(
+                    'item' => $item
+                )));
             }
         } else {
-            $this->error(__("Cannot find file for schema object #{item} (looked in #{schema_path})", array(
-                'item' => "<strong>$item</strong>",
+            $this->error(__('Cannot find file for schema object #<strong>#{item}</strong> (looked in #{schema_path})', array(
+                'item' => $item,
                 'schema_path' => DBV_SCHEMA_PATH
             )));
         }
@@ -225,12 +235,12 @@ class DBV
         try {
             $sql = $this->_getAdapter()->getSchemaObject($item);
 
-            $file = DBV_SCHEMA_PATH . DS . "$item.sql";
+            $file = DBV_SCHEMA_PATH . DS . $item . '.sql';
 
             if (@file_put_contents($file, $sql)) {
-                $this->confirm(__("Wrote file: #{file}", array('file' => "<strong>$file</strong>")));
+                $this->confirm(__('Wrote file: #<strong>#{file}</strong>', array('file' => $file)));
             } else {
-                $this->error(__("Cannot write file: #{file}", array('file' => "<strong>$file</strong>")));
+                $this->error(__('Cannot write file: #<strong>#{file}</strong>', array('file' => $file)));
             }
         } catch (DBV_Exception $e) {
             $this->error(($e->getCode() ? "[{$e->getCode()}] " : '') . $e->getMessage());
@@ -245,7 +255,9 @@ class DBV
             case 'sql':
                 $content = file_get_contents($file);
                 if ($content === false) {
-                    $this->error(__("Cannot open file #{file}", array('file' => "<strong>$file</strong>")));
+                    $this->error(__('Cannot open file #<strong>#{file}</strong>', array(
+                        'file' => $file
+                    )));
                     return false;
                 }
 
@@ -253,7 +265,11 @@ class DBV
                     $this->_getAdapter()->query($content);
                     return true;
                 } catch (DBV_Exception $e) {
-                    $this->error("[{$e->getCode()}] {$e->getMessage()} in <strong>$file</strong>");
+                    $this->error(__('[#{code}] #{message} in <strong>#{file}</strong>', array(
+                        'code' => $e->getCode() ,
+                        'message' => $e->getMessage() ,
+                        'file' => $file
+                    )));
                 }
                 break;
         }
@@ -274,7 +290,7 @@ class DBV
 
     protected function _view($view)
     {
-        $file = DBV_ROOT_PATH . DS . 'templates' . DS . "$view.php";
+        $file = DBV_ROOT_PATH . DS . 'templates' . DS . $view . '.php';
         if (file_exists($file)) {
             include($file);
         }
@@ -343,7 +359,7 @@ class DBV
     {
         $file = DBV_META_PATH . DS . 'revision';
         if (!@file_put_contents($file, $revision)) {
-            $this->error("Cannot write revision file");
+            $this->error('Cannot write revision file');
         }
     }
 
@@ -380,8 +396,8 @@ class DBV
     public function error($message)
     {
         $item = array(
-            "type" => "error",
-            "message" => $message
+            'type' => 'error',
+            'message' => $message
         );
         $this->log($item);
     }
@@ -389,8 +405,8 @@ class DBV
     public function confirm($message)
     {
         $item = array(
-            "type" => "success",
-            "message" => $message
+            'type' => 'success',
+            'message' => $message
         );
         $this->log($item);
     }
@@ -403,7 +419,7 @@ class DBV
 
     protected function _json($data = array())
     {
-        header("Content-type: application/json");
+        header('Content-type: application/json');
         echo (is_string($data) ? $data : json_encode($data));
         exit();
     }

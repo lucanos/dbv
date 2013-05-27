@@ -16,7 +16,7 @@ class DBV_Adapter_MySQL implements DBV_Adapter_Interface
 
         try {
             $this->_connection = new PDO($this->_buildDsn($host, $port, $database_name), $username, $password, array(
-                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"
+                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'
             ));
             $this->_connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -27,7 +27,7 @@ class DBV_Adapter_MySQL implements DBV_Adapter_Interface
 
     protected function _buildDsn($host = false, $port = false, $database_name = false)
     {
-        if($host[0] == "/") {
+        if($host[0] == '/') {
             $location = "unix_socket=$host";
         } else {
             $location = "host=$host;port=$port";
@@ -124,27 +124,21 @@ class DBV_Adapter_MySQL implements DBV_Adapter_Interface
     public function getSchemaObject($name)
     {
         $index = 1;
-        switch ($name) {
-            case in_array($name, $this->getTables()):
-                $type = 'table';
-                break;
-            case in_array($name, $this->getViews()):
-                $type = 'view';
-                break;
-            case in_array($name, $this->getTriggers()):
-                $type = 'trigger';
-                $index = 2;
-                break;
-            case in_array($name, $this->getProcedures()):
-                $type = 'procedure';
-                $index = 2;
-                break;
-            case in_array($name, $this->getFunctions()):
-                $type = 'function';
-                $index = 2;
-                break;
-            default:
-                throw new DBV_Exception("<strong>$name</strong> not found in the database");
+        if (in_array($name, $this->getTables()) ){
+            $type = 'table';
+        }elseif (in_array($name, $this->getViews())){
+            $type = 'view';
+        }elseif (in_array($name, $this->getTriggers())){
+            $type = 'trigger';
+            $index = 2;
+        }elseif (in_array($name, $this->getProcedures())){
+            $type = 'procedure';
+            $index = 2;
+        }elseif (in_array($name, $this->getFunctions())){
+            $type = 'function';
+            $index = 2;
+        }else{
+            throw new DBV_Exception("<strong>$name</strong> not found in the database");
         }
 
         $query = "SHOW CREATE $type `$name`";

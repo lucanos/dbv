@@ -35,7 +35,7 @@ class DBV_Adapter_SQLite implements DBV_Adapter_Interface
         try {
             return $this->_connection->query($sql);
         } catch (PDOException $e) {
-            throw new DBV_Exception("Error during SQL query.", 0, $e);
+            throw new DBV_Exception('Error during SQL query.', 0, $e);
         }
     }
     
@@ -44,7 +44,7 @@ class DBV_Adapter_SQLite implements DBV_Adapter_Interface
         try {
             return $this->_connection->prepare($sql);
         } catch (PDOException $e) {
-            throw new DBV_Exception("Error during SQL prepartion.", 0, $e);
+            throw new DBV_Exception('Error during SQL prepartion.', 0, $e);
         }
     }
 
@@ -60,7 +60,8 @@ class DBV_Adapter_SQLite implements DBV_Adapter_Interface
         $return = array();
 
         try {
-            $stmt = $this->query("SELECT name,type FROM sqlite_master WHERE type='table' ORDER BY name");
+            $stmt = $this->query('SELECT name,type FROM sqlite_master WHERE type = :type ORDER BY name');
+            $stmt->bindParam('type', 'table');
             
             while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
                 $return[] = ($prefix ? "{$prefix} " : '') . $row[0];
@@ -80,7 +81,8 @@ class DBV_Adapter_SQLite implements DBV_Adapter_Interface
         $return = array();
 
         try {
-            $stmt = $this->query("SELECT name,type FROM sqlite_master WHERE type='trigger' ORDER BY name");
+            $stmt = $this->query('SELECT name,type FROM sqlite_master WHERE type = :type ORDER BY name');
+            $stmt->bindParam('type', 'trigger');
             
             while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
                 $return[] = ($prefix ? "{$prefix} " : '') . $row[0];
@@ -100,7 +102,8 @@ class DBV_Adapter_SQLite implements DBV_Adapter_Interface
         $return = array();
 
         try {
-            $stmt = $this->query("SELECT name,type FROM sqlite_master WHERE type='view' ORDER BY name");
+            $stmt = $this->query('SELECT name,type FROM sqlite_master WHERE type = :type ORDER BY name');
+            $stmt->bindParam('type', 'view');
             
             while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
                 $return[] = ($prefix ? "{$prefix} " : '') . $row[0];
@@ -118,8 +121,9 @@ class DBV_Adapter_SQLite implements DBV_Adapter_Interface
     public function getCreateView($name)
     {
         try {
-            $stmt = $this->query("SELECT * FROM sqlite_master WHERE type='view' AND name = :name");
-            $stmt->bindParam("name", $name);
+            $stmt = $this->query('SELECT * FROM sqlite_master WHERE type = :trigger AND name = :name');
+            $stmt->bindParam('type', 'view');
+            $stmt->bindParam('name', $name);
             
             $row = $stmt->fetch(PDO::FETCH_NUM);
             $stmt->closeCursor();
@@ -135,12 +139,13 @@ class DBV_Adapter_SQLite implements DBV_Adapter_Interface
     public function getCreateTable($name)
     {
         try {
-            $stmt = $this->prepare("SELECT * FROM sqlite_master WHERE type='table' AND name = :name");
-            $stmt->bindParam("name", $name);
+            $stmt = $this->query('SELECT * FROM sqlite_master WHERE type = :trigger AND name = :name');
+            $stmt->bindParam('type', 'table');
+            $stmt->bindParam('name', $name);
             $result = $stmt->execute();
             
             if(! $result){
-                throw new Exception("Error while executing prepared statement.", 0, null);
+                throw new Exception('Error while executing prepared statement.', 0, null);
             }
             
             $row = $stmt->fetch(PDO::FETCH_NUM);
@@ -157,8 +162,9 @@ class DBV_Adapter_SQLite implements DBV_Adapter_Interface
     public function getCreateTrigger($name)
     {
         try {
-            $stmt = $this->query("SELECT * FROM sqlite_master WHERE type='trigger' AND name = :name");
-            $stmt->bindParam("name", $name);
+            $stmt = $this->query('SELECT * FROM sqlite_master WHERE type = :trigger AND name = :name');
+            $stmt->bindParam('type', 'trigger');
+            $stmt->bindParam('name', $name);
             
             $row = $stmt->fetch(PDO::FETCH_NUM);
             $stmt->closeCursor();
@@ -173,17 +179,13 @@ class DBV_Adapter_SQLite implements DBV_Adapter_Interface
 
     public function getSchemaObject($name)
     {
-        switch ($name) {
-            case in_array($name, $this->getTables()):
-                return $this->getCreateTable($name);
-            case in_array($name, $this->getViews()):
-                return $this->getCreateView($name);
-            case in_array($name, $this->getTriggers()):
+        if (in_array($name, $this->getTables()))
+            return $this->getCreateTable($name);
+        if (in_array($name, $this->getViews()))
+            return $this->getCreateView($name);
+        if (in_array($name, $this->getTriggers()))
             return $this->getCreateTrigger($name);
-            default:
-                throw new DBV_Exception("<strong>$name</strong> not found in the database");
-        }
-
+        throw new DBV_Exception("<strong>$name</strong> not found in the database");
     }
 
 }
